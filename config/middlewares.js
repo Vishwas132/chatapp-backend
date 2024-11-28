@@ -1,7 +1,23 @@
 export default [
   'strapi::errors',
   'strapi::security',
-  'strapi::cors',
+  {
+    name: 'strapi::cors',
+    config: {
+      enabled: true,
+      headers: [
+        'Content-Type',
+        'Authorization',
+        'X-Frame-Options',
+        'Origin',
+        'Accept',
+      ],
+      origin: ['http://localhost:5173'],
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
+      credentials: true,
+      keepHeaderOnError: true
+    },
+  },
   'strapi::poweredBy',
   'strapi::logger',
   'strapi::query',
@@ -9,5 +25,4 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  'global::websocket',
 ];
