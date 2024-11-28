@@ -31,6 +31,7 @@ export default {
 
     io.on('connection', (socket) => {
       console.log('A user connected:', socket.id);
+      const userId = socket.handshake.query.userId;
       
       // Send existing messages to newly connected client
       socket.emit('previous-messages', messages);
@@ -41,7 +42,7 @@ export default {
           id: messages.length + 1,
           text: message,
           timestamp: new Date().toISOString(),
-          userId: socket.id
+          userId: userId
         };
 
         messages.push(messageWithTimestamp);
