@@ -1,4 +1,5 @@
 import { Server } from 'socket.io';
+import { Strapi } from '@strapi/types/dist/core';
 
 export default {
   /**
@@ -16,7 +17,7 @@ export default {
    * This gives you an opportunity to set up your data model,
    * run jobs, or perform some special logic.
    */
-  bootstrap({ strapi }) {
+  bootstrap({ strapi }: { strapi: Strapi }) {
     // Store messages in memory
     const messages: any[] = [];
     const MAX_MESSAGES = 50;
@@ -29,28 +30,55 @@ export default {
       }
     });
 
+    // Middleware to verify JWT token
+    io.use(async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token;
+        if (!token) {
+          throw new Error('Authentication token missing');
+        }
+
+        // Verify JWT token using Strapi's service
+        const { id } = await strapi.plugins['users-permissions'].services.jwt.verify(token);
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', id, {
+          populate: ['role'],
+        });
+
+        if (!user) {
+          throw new Error('User not found');
+        }
+
+        // Attach user to socket
+        socket.data.user = user;
+        next();
+      } catch (error) {
+        next(new Error('Authentication error'));
+      }
+    });
+
     io.on('connection', (socket) => {
       console.log('A user connected:', socket.id);
-      const userId = socket.handshake.query.userId;
+      const user = socket.data.user;
       
       // Send existing messages to newly connected client
       socket.emit('previous-messages', messages);
 
       socket.on('message', (message) => {
         console.log('Received message:', message);
-        const messageWithTimestamp = {
+        const messageWithMetadata = {
           id: messages.length + 1,
           text: message,
           timestamp: new Date().toISOString(),
-          userId: userId
+          userId: user.id,
+          username: user.username
         };
 
-        messages.push(messageWithTimestamp);
+        messages.push(messageWithMetadata);
         if (messages.length > MAX_MESSAGES) {
           messages.shift();
         }
 
-        io.emit('message', messageWithTimestamp);
+        io.emit('message', messageWithMetadata);
       });
 
       socket.on('disconnect', () => {
@@ -66,6 +94,6 @@ export default {
       console.error('Socket.IO error:', error);
     });
 
-    strapi.io = io; // Store io instance in strapi
+    strapi.app.io = io; // Store io instance in strapi
   },
 };
