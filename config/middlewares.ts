@@ -4,7 +4,6 @@ export default [
   {
     name: 'strapi::cors',
     config: {
-      enabled: true,
       headers: [
         'Content-Type',
         'Authorization',
@@ -12,7 +11,7 @@ export default [
         'Origin',
         'Accept',
       ],
-      origin: ['http://localhost:5173'],
+      origin: [process.env.CORS_ORIGIN || 'http://localhost:5173'],
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
       credentials: true,
       keepHeaderOnError: true

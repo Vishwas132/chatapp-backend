@@ -1,5 +1,3 @@
-import path from 'path';
-
 interface Env {
   (key: string, defaultValue?: any): any;
   int(key: string, defaultValue?: number): number;

@@ -15,8 +15,6 @@ services:
         value: 0.0.0.0
       - key: PORT
         value: 1337
-      - key: CORS_ORIGIN
-        value: "*"
       - key: DATABASE_URL
         fromDatabase:
           name: strapi_postgres_chatapp
@@ -41,11 +39,6 @@ services:
         value: 30000
       - key: DATABASE_IDLE_TIMEOUT
         value: 30000
-
-  - type: redis
-    name: strapi_redis
-    ipAllowList: []
-    plan: free
 
 databases:
   - name: strapi_postgres
