@@ -40,8 +40,11 @@ export default {
 
         // Verify JWT token using Strapi's service
         const { id } = await strapi.plugins['users-permissions'].services.jwt.verify(token);
-        const user = await strapi.entityService.findOne('plugin::users-permissions.user', id, {
-          populate: ['role'],
+        
+        // Using the newer API signature
+        const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+          where: { id },
+          populate: { role: true }
         });
 
         if (!user) {
