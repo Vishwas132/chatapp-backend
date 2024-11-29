@@ -1,5 +1,14 @@
 import { Server } from 'socket.io';
 import { Strapi } from '@strapi/types/dist/core';
+import { Message } from './api/message/content-types/message/message';
+
+interface MessageForClient {
+  id: number;
+  text: string;
+  timestamp: string;
+  userId: number | undefined;
+  username: string | undefined;
+}
 
 export default {
   /**
@@ -18,10 +27,6 @@ export default {
    * run jobs, or perform some special logic.
    */
   bootstrap({ strapi }: { strapi: Strapi }) {
-    // Store messages in memory
-    const messages: any[] = [];
-    const MAX_MESSAGES = 50;
-
     const io = new Server(strapi.server.httpServer, {
       cors: {
         origin: "http://localhost:5173",
@@ -59,38 +64,72 @@ export default {
       }
     });
 
-    io.on('connection', (socket) => {
+    io.on('connection', async (socket) => {
       console.log('A user connected:', socket.id);
       const user = socket.data.user;
       
-      // Send existing messages to newly connected client
-      socket.emit('previous-messages', messages);
+      try {
+        // Fetch recent messages from database
+        const messages = await strapi.db.query('api::message.message').findMany({
+          orderBy: { timestamp: 'desc' },
+          limit: 50,
+          populate: ['sender']
+        }) as Message[];
 
-      socket.on('message', (message) => {
-        console.log('Received message:', message);
-        const messageWithMetadata = {
-          id: messages.length + 1,
-          text: message,
-          timestamp: new Date().toISOString(),
-          userId: user.id,
-          username: user.username
-        };
+        // Format and send existing messages to newly connected client
+        const formattedMessages: MessageForClient[] = messages.reverse().map(message => ({
+          id: message.id,
+          text: message.text,
+          timestamp: message.timestamp,
+          userId: message.sender?.id,
+          username: message.sender?.username
+        }));
 
-        messages.push(messageWithMetadata);
-        if (messages.length > MAX_MESSAGES) {
-          messages.shift();
-        }
+        socket.emit('previous-messages', formattedMessages);
 
-        io.emit('message', messageWithMetadata);
-      });
+        // Handle new messages
+        socket.on('message', async (messageText: string) => {
+          try {
+            console.log('Received message:', messageText);
 
-      socket.on('disconnect', () => {
-        console.log('User disconnected:', socket.id);
-      });
+            // Create message in database using the newer API
+            const message = await strapi.db.query('api::message.message').create({
+              data: {
+                text: messageText,
+                sender: user.id,
+                timestamp: new Date().toISOString()
+              },
+              populate: ['sender']
+            }) as Message;
 
-      socket.on('error', (error) => {
-        console.error('Socket error:', error);
-      });
+            // Format message for client
+            const messageForClient: MessageForClient = {
+              id: message.id,
+              text: message.text,
+              timestamp: message.timestamp,
+              userId: message.sender?.id,
+              username: message.sender?.username
+            };
+
+            // Broadcast to all clients
+            io.emit('message', messageForClient);
+          } catch (error) {
+            console.error('Error saving message:', error);
+            socket.emit('error', 'Failed to save message');
+          }
+        });
+
+        socket.on('disconnect', () => {
+          console.log('User disconnected:', socket.id);
+        });
+
+        socket.on('error', (error) => {
+          console.error('Socket error:', error);
+        });
+      } catch (error) {
+        console.error('Error fetching messages:', error);
+        socket.emit('error', 'Failed to fetch messages');
+      }
     });
 
     io.on('error', (error) => {
