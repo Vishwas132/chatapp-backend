@@ -37,7 +37,7 @@ export default {
   bootstrap({ strapi }: { strapi: Strapi }) {
     const io = new Server(strapi.server.httpServer, {
       cors: {
-        origin: "http://localhost:5173",
+        origin: process.env.CORS_ORIGIN || "http://localhost:5173",
         methods: ["GET", "POST"],
         credentials: true
       }

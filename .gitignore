@@ -78,12 +78,30 @@ $RECYCLE.BIN/
 
 *#
 ssl
-.idea
 nbproject
 public/uploads/*
 !public/uploads/.gitkeep
 .tsbuildinfo
 .eslintcache
+
+############################
+# Environment
+############################
+
+.env
+!.env.example
+
+############################
+# Strapi
+############################
+
+license.txt
+exports
+.cache
+build
+.strapi-updater.json
+.tmp/
+dist/
 
 ############################
 # Node.js
@@ -96,6 +114,7 @@ logs
 results
 node_modules
 .node_history
+*.heapsnapshot
 
 ############################
 # Package managers
@@ -118,14 +137,16 @@ yarn-error.log
 coverage
 
 ############################
-# Strapi
+# IDEs
 ############################
 
-.env
-license.txt
-exports
-.strapi
-dist
-build
-.strapi-updater.json
-.strapi-cloud.json
+.idea/
+.vscode/
+*.sublime-workspace
+*.sublime-project
+
+############################
+# Misc
+############################
+
+.render/
