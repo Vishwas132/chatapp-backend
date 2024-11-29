@@ -1,61 +1,99 @@
-# 🚀 Getting started with Strapi
+# Chat Application Backend
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
+This is the backend for a real-time chat application built with Strapi. It provides WebSocket functionality for real-time communication and REST APIs for user authentication and data management.
 
-### `develop`
+## Features
 
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
+- WebSocket server for real-time messaging
+- User authentication and authorization
+- Chat session management
+- Message storage and retrieval
+- RESTful API endpoints
 
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- MongoDB (if using MongoDB as database)
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
 ```
+
+### Development
+
+Start the development server with auto-reload:
+```bash
 npm run develop
 # or
 yarn develop
 ```
 
-### `start`
+### Production
 
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
-
-```
+Start the production server:
+```bash
 npm run start
 # or
 yarn start
 ```
 
-### `build`
-
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
-
-```
+Build the admin panel:
+```bash
 npm run build
 # or
 yarn build
 ```
 
-## ⚙️ Deployment
+## API Documentation
 
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
+### REST Endpoints
 
+- `POST /auth/local/register` - User registration
+- `POST /auth/local` - User login
+- `GET /messages` - Retrieve messages
+- `POST /messages` - Create a new message
+
+### WebSocket
+
+The WebSocket server is configured to echo messages back to the client. Connect to the WebSocket server at:
 ```
-yarn strapi deploy
+ws://localhost:1337/ws
 ```
 
-## 📚 Learn more
+## Environment Variables
 
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
+Create a `.env` file in the root directory with the following variables:
 
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
+```env
+HOST=0.0.0.0
+PORT=1337
+APP_KEYS=your-app-keys
+API_TOKEN_SALT=your-token-salt
+ADMIN_JWT_SECRET=your-admin-jwt-secret
+JWT_SECRET=your-jwt-secret
+```
 
-## ✨ Community
+## Technology Stack
 
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
+- Strapi (Headless CMS)
+- Socket.io (WebSocket)
+- JWT Authentication
+- PostgreSQL (Database)
 
----
+## Deployment
 
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+For deployment instructions, refer to the [Strapi Deployment Documentation](https://docs.strapi.io/dev-docs/deployment).
+
+## Additional Resources
+
+- [Strapi Documentation](https://docs.strapi.io)
+- [WebSocket Documentation](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
