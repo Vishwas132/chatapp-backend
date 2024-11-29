@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "sessions",
+  "info": {
+    "singularName": "session",
+    "pluralName": "sessions",
+    "displayName": "Session"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "socketId": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "sessions"
+    },
+    "lastSeen": {
+      "type": "datetime",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": [
+        "online",
+        "away",
+        "offline"
+      ],
+      "default": "online",
+      "required": true
+    }
+  }
+}

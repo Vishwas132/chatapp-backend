@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { Strapi } from '@strapi/types/dist/core';
 import { Message } from './api/message/content-types/message/message';
+import { Session } from './api/session/content-types/session/session';
 
 interface MessageForClient {
   id: number;
@@ -8,6 +9,13 @@ interface MessageForClient {
   timestamp: string;
   userId: number | undefined;
   username: string | undefined;
+}
+
+interface UserStatus {
+  userId: number;
+  username: string;
+  status: 'online' | 'away' | 'offline';
+  lastSeen: string;
 }
 
 export default {
@@ -64,11 +72,71 @@ export default {
       }
     });
 
+    const broadcastUserStatus = async (userId: number, status: 'online' | 'away' | 'offline') => {
+      const user = await strapi.db.query('plugin::users-permissions.user').findOne({
+        where: { id: userId }
+      });
+
+      if (user) {
+        const userStatus: UserStatus = {
+          userId: user.id,
+          username: user.username,
+          status,
+          lastSeen: new Date().toISOString()
+        };
+        io.emit('user_status', userStatus);
+      }
+    };
+
     io.on('connection', async (socket) => {
       console.log('A user connected:', socket.id);
       const user = socket.data.user;
       
       try {
+        // Create or update session
+        const existingSessions = await strapi.db.query('api::session.session').findMany({
+          where: { user: user.id }
+        });
+
+        // Mark old sessions as offline
+        for (const session of existingSessions) {
+          await strapi.db.query('api::session.session').update({
+            where: { id: session.id },
+            data: {
+              status: 'offline',
+              lastSeen: new Date().toISOString()
+            }
+          });
+        }
+
+        // Create new session
+        await strapi.db.query('api::session.session').create({
+          data: {
+            socketId: socket.id,
+            user: user.id,
+            status: 'online',
+            lastSeen: new Date().toISOString()
+          }
+        });
+
+        // Broadcast user's online status
+        await broadcastUserStatus(user.id, 'online');
+
+        // Send active users list to new connection
+        const activeSessions = await strapi.db.query('api::session.session').findMany({
+          where: { status: 'online' },
+          populate: ['user']
+        });
+
+        const activeUsers: UserStatus[] = activeSessions.map(session => ({
+          userId: session.user?.id as number,
+          username: session.user?.username as string,
+          status: session.status,
+          lastSeen: session.lastSeen
+        }));
+
+        socket.emit('active_users', activeUsers);
+
         // Fetch recent messages from database
         const messages = await strapi.db.query('api::message.message').findMany({
           orderBy: { timestamp: 'desc' },
@@ -119,16 +187,46 @@ export default {
           }
         });
 
-        socket.on('disconnect', () => {
+        // Handle user status updates
+        socket.on('status_change', async (status: 'online' | 'away') => {
+          try {
+            await strapi.db.query('api::session.session').update({
+              where: { socketId: socket.id },
+              data: {
+                status,
+                lastSeen: new Date().toISOString()
+              }
+            });
+            await broadcastUserStatus(user.id, status);
+          } catch (error) {
+            console.error('Error updating status:', error);
+          }
+        });
+
+        socket.on('disconnect', async () => {
           console.log('User disconnected:', socket.id);
+          try {
+            // Update session status
+            await strapi.db.query('api::session.session').update({
+              where: { socketId: socket.id },
+              data: {
+                status: 'offline',
+                lastSeen: new Date().toISOString()
+              }
+            });
+            // Broadcast offline status
+            await broadcastUserStatus(user.id, 'offline');
+          } catch (error) {
+            console.error('Error updating session on disconnect:', error);
+          }
         });
 
         socket.on('error', (error) => {
           console.error('Socket error:', error);
         });
       } catch (error) {
-        console.error('Error fetching messages:', error);
-        socket.emit('error', 'Failed to fetch messages');
+        console.error('Error in connection handling:', error);
+        socket.emit('error', 'Failed to initialize connection');
       }
     });
 
